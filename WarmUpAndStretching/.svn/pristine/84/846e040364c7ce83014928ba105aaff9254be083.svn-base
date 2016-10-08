@@ -1,0 +1,39 @@
+package anagram;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
+/**
+ * This utility class can test whether two strings are anagrams.
+ *
+ * @author Claude Anderson.
+ */
+public class Anagram {
+
+	/**
+	 * We say that two strings are anagrams if one can be transformed into the
+	 * other by permuting the characters (and ignoring case).
+	 * 
+	 * For example, "Data Structure" and "Saturated Curt" are anagrams,
+	 * as are "Elvis" and "Lives".
+	 * 
+	 * @param s1
+	 *            first string
+	 * @param s2
+	 *            second string
+	 * @return true iff s1 is an anagram of s2
+	 */
+	public static boolean isAnagram(String s1, String s2) {
+		// TODO: implement this method
+		// convert strings to char array 
+		char [] charlist1 = s1.toLowerCase().toCharArray();
+		char [] charlist2 = s2.toLowerCase().toCharArray();
+		// sort char array
+		Arrays.sort(charlist1);
+		Arrays.sort(charlist2);
+		// convert char array into string
+		String s3 = new String(charlist1);
+		String s4 = new String(charlist2);
+		return s3.equals(s4);
+	}
+}

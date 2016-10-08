@@ -1,0 +1,37 @@
+package hardysTaxi;
+
+/**
+ * Provides the static method hardySolutionsLessThan(N) which finds all "taxicab
+ * numbers that are less than n. These are represented as TaxicabNumber objects,
+ * which include the sum and two different ways of writing that as a sum of two
+ * cubes.
+ * 
+ * @author Claude Anderson.
+ * 
+ */
+public class Hardy {
+
+	// TODO: Declare any variables or helper methods that you need.
+
+	/**
+	 * Find the nth Hardy number (start counting with 1, not 0) and the numbers
+	 * whose cubes demonstrate that it is a Hardy number.
+	 * 
+	 * @param n
+	 * @return the nth Hardy number
+	 */
+	public static long nthHardyNumber(int n) {
+
+		// TODO: If you have any fields that are arrays or collections,
+		// You must clear them at the beginning of each call to this method.
+		// This is so that values calculated by previous calls do not speed up
+		// subsequent calls.
+
+		// TODO: replace the following dummy statement by real code that
+		// calculates
+		// and returns the nth Hardy number.
+		return 0;
+
+	}
+
+}

@@ -1,0 +1,230 @@
+package editortrees;
+
+import java.util.ArrayList;
+import java.util.Stack;
+
+// A node in a height-balanced binary tree with rank.
+// Except for the NULL_NODE (if you choose to use one), one node cannot
+// belong to two different trees.
+
+/**
+ * A node in a height-balanced binary tree with rank.
+ * 
+ * @author Bochuan Lu and Ruinan Zhang. Created April 18, 2016.
+ *
+ */
+public class Node {
+	public static final Node NULL_NODE = new Node();
+
+	enum Code {
+		LEFT, SAME, RIGHT;
+		// Used in the displayer and debug string
+		public String toString() {
+			switch (this) {
+			case LEFT:
+				return "/";
+			case SAME:
+				return "=";
+			case RIGHT:
+				return "\\";
+			default:
+				throw new IllegalStateException();
+			}
+		}
+	}
+
+	// The fields would normally be private, but for the purposes of this class,
+	// we want to be able to test the results of the algorithms in addition to
+	// the
+	// "publicly visible" effects
+
+	char element;
+	Node left, right; // subtrees
+	int rank; // inorder position of this node within its own subtree.
+	int balance;
+
+	// Node parent; // You may want this field.
+	// Feel free to add other fields that you find useful
+	public Node(char element) {
+		this.element = element;
+		this.left = NULL_NODE;
+		this.right = NULL_NODE;
+		this.balance = Code.SAME.ordinal();
+		this.rank = 0;
+	}
+
+	// You will probably want to add several other methods
+	public Node() {
+		this.left = null;
+		this.right = null;
+		this.balance = Code.SAME.ordinal();
+		this.rank = 0;
+	}
+
+	// For the following methods, you should fill in the details so that they
+	// work correctly
+	public int height() {
+		if (this == NULL_NODE) {
+			return -1;
+		}
+		// Use the local variables to store the left and right height.
+		int leftHeight = this.left.height();
+		int rightHeight = this.right.height();
+		return leftHeight > rightHeight ? 1 + leftHeight : 1 + rightHeight;
+	}
+
+	/**
+	 * Return the size of the tree.
+	 * 
+	 * @return
+	 */
+	public int size() {
+		if (this == NULL_NODE) {
+			return 0;
+		}
+		return 1 + this.rank + this.right.size();
+	}
+
+	/**
+	 * Add the Node with given c and position into the tree and add this Node to
+	 * the Stack s to do rotation later.
+	 * 
+	 * @param c
+	 * @param pos
+	 * @param s
+	 */
+	public void add(char c, int pos, Stack<Node> s) {
+		if (pos <= this.rank) {
+			this.rank++;
+			if (this.left == NULL_NODE) {
+				this.left = new Node(c);
+				s.push(this.left);
+			} else {
+				s.push(this.left);
+				this.left.add(c, pos, s);
+			}
+		} else if (pos > this.rank) {
+			if (this.right == NULL_NODE) {
+				if (pos - this.rank > 1) {
+					// position out of range, throw exception
+					throw new IndexOutOfBoundsException();
+				}
+				this.right = new Node(c);
+				s.push(this.right);
+			} else {
+				s.push(this.right);
+				this.right.add(c, pos - this.rank - 1, s);
+			}
+		}
+	}
+
+	/**
+	 * Add the Node with given c into the last position of the tree and add this
+	 * Node to the Stack s to do rotation later.
+	 * 
+	 * @param c
+	 * @param s
+	 */
+	public void add(char c, Stack<Node> s) {
+		s.push(this);
+		if (this.right == NULL_NODE) {
+			this.right = new Node(c);
+			s.push(this.right);
+			return;
+		}
+		this.right.add(c, s);
+	}
+
+	/**
+	 * Put all element in tree to an ArrayList in InOrder.
+	 * 
+	 * @param arr
+	 */
+	public void toArrayList(ArrayList<Node> arr) {
+		if (this == NULL_NODE) {
+			return;
+		}
+		this.left.toArrayList(arr);
+		arr.add(this);
+		this.right.toArrayList(arr);
+	}
+
+	/**
+	 * Put all element in tree to an ArrayList in PreOrder.
+	 * 
+	 * @param arr
+	 */
+	public void toPreOrderArrayList(ArrayList<Node> arr) {
+		if (this == NULL_NODE) {
+			return;
+		}
+		arr.add(this);
+		this.left.toPreOrderArrayList(arr);
+		this.right.toPreOrderArrayList(arr);
+	}
+
+	/**
+	 * Get the balance Code of the tree.(Use to print out)
+	 * 
+	 * @return
+	 */
+	public Code getBalance() {
+		if (this.balance == 0) {
+			return Code.LEFT;
+		} else if (this.balance == 1) {
+			return Code.SAME;
+		}
+		return Code.RIGHT;
+	}
+
+	/**
+	 * Get the element of the node at the given position.
+	 * 
+	 * @param pos
+	 * @return
+	 */
+	public char get(int pos) {
+		if (this == NULL_NODE) {
+			throw new IndexOutOfBoundsException();
+		}
+
+		if (this.rank == pos) {
+			return this.element;
+
+		}
+		if (this.rank > pos) {
+			return this.left.get(pos);
+		}
+		return this.right.get(pos - rank - 1);
+	}
+	
+	/*
+	 * the function get the node with specific position 
+	 * and add the element to a stack
+	 */
+	public Node getNode(int pos, Stack<Node> s) {
+		if (this == NULL_NODE) {
+			throw new IndexOutOfBoundsException();
+		}
+		s.add(this);
+		if (this.rank == pos) {
+			return this;
+
+		}
+		if (this.rank > pos) {
+			this.rank--;
+			return this.left.getNode(pos, s);
+		}
+		return this.right.getNode(pos - rank - 1, s);
+	}
+
+	/**
+	 * Use to debug. Print out the element.
+	 */
+	@Override
+	public String toString() {
+		return this.element + "";
+
+	}
+
+}

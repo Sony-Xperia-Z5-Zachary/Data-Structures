@@ -1,0 +1,647 @@
+package editortrees;
+
+import java.util.ArrayList;
+import java.util.Stack;
+
+// A height-balanced binary tree with rank that could be the basis for a text editor.
+
+/*
+ * @author Ruinan Zhang; Bochuan Lu
+ * 
+ */
+public class EditTree {
+
+	private Node root;
+	private int totalRotationCount = 0;
+
+	/**
+	 * Construct an empty tree
+	 */
+	public EditTree() {
+		this.root = Node.NULL_NODE;
+	}
+
+	/**
+	 * Construct a single-node tree whose element is c
+	 * 
+	 * @param c
+	 */
+	public EditTree(char c) {
+		this.root = new Node(c);
+	}
+
+	/**
+	 * Create an EditTree whose toString is s. This can be done in O(N) time,
+	 * where N is the length of the tree (repeatedly calling insert() would be
+	 * O(N log N), so you need to find a more efficient way to do this.
+	 * 
+	 * @param s
+	 */
+	public EditTree(String s) {
+
+	}
+
+	/**
+	 * Make this tree be a copy of e, with all new nodes, but the same shape and
+	 * contents.
+	 * 
+	 * @param e
+	 */
+	public EditTree(EditTree e) {
+		if (e.size() == 0) {
+			root = Node.NULL_NODE;
+			return;
+		}
+		this.root = new Node(e.root.element);
+		root.rank = e.root.rank;
+		root.balance = e.root.balance;
+		this.copyNode(root, e.root);
+	}
+
+	private void copyNode(Node newNode, Node oldNode) {
+		// TODO Auto-generated method stub
+		if (oldNode.right != Node.NULL_NODE) {
+			newNode.right = new Node(oldNode.right.element);
+			newNode.right.balance = oldNode.right.balance;
+			newNode.right.rank = oldNode.right.rank;
+			copyNode(newNode.right, oldNode.right);
+		}
+		if (oldNode.left != Node.NULL_NODE) {
+			newNode.left = new Node(oldNode.left.element);
+			newNode.left.balance = oldNode.left.balance;
+			newNode.left.rank = oldNode.left.rank;
+			copyNode(newNode.left, oldNode.left);
+		}
+	}
+
+	/**
+	 * 
+	 * @return the height of this tree
+	 */
+	public int height() {
+		return this.root.height(); // replace by a real calculation.
+	}
+
+	/**
+	 * 
+	 * returns the total number of rotations done in this tree since it was
+	 * created. A double rotation counts as two.
+	 *
+	 * @return number of rotations since tree was created.
+	 */
+	public int totalRotationCount() {
+		return totalRotationCount; // replace by a real calculation.
+	}
+
+	/**
+	 * return the string produced by an inorder traversal of this tree
+	 */
+	@Override
+	public String toString() {
+		ArrayList<Node> arr = new ArrayList<Node>();
+		root.toArrayList(arr);
+		StringBuilder sb = new StringBuilder();
+		for (Node n : arr) {
+			sb.append(n.element);
+		}
+
+		return sb.toString(); // replace by a real calculation.
+	}
+
+	/**
+	 * This one asks for more info from each node. You can write it like the
+	 * arraylist-based toString() method from the BST assignment. However, the
+	 * output isn't just the elements, but the elements, ranks, and balance
+	 * codes. Former CSSE230 students recommended that this method, while making
+	 * it harder to pass tests initially, saves them time later since it catches
+	 * weird errors that occur when you don't update ranks and balance codes
+	 * correctly. For the tree with node b and children a and c, it should
+	 * return the string: [b1=, a0=, c0=] There are many more examples in the
+	 * unit tests.
+	 * 
+	 * @return The string of elements, ranks, and balance codes, given in a
+	 *         pre-order traversal of the tree.
+	 */
+	public String toDebugString() {
+		ArrayList<Node> arr = new ArrayList<Node>();
+		root.toPreOrderArrayList(arr);
+		;
+		StringBuilder sb = new StringBuilder();
+		sb.append("[");
+		for (Node n : arr) {
+			sb.append(n.element + "" + n.rank + "" + n.getBalance().toString() + ", ");
+		}
+
+		if (arr.size() != 0) {
+			sb.deleteCharAt(sb.length() - 1);
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+
+	/**
+	 * 
+	 * @param pos
+	 *            position in the tree
+	 * @return the character at that position
+	 * @throws IndexOutOfBoundsException
+	 */
+	public char get(int pos) throws IndexOutOfBoundsException {
+		return this.root.get(pos);
+	}
+
+	/**
+	 * 
+	 * @param c
+	 *            character to add to the end of this tree.
+	 */
+	public void add(char c) {
+		// Notes:
+		// 1. Please document chunks of code as you go. Why are you doing what
+		// you are doing? Comments written after the code is finalized tend to
+		// be useless, since they just say WHAT the code does, line by line,
+		// rather than WHY the code was written like that. Six months from now,
+		// it's the reasoning behind doing what you did that will be valuable to
+		// you!
+		// 2. Unit tests are cumulative, and many things are based on add(), so
+		// make sure that you get this one correct.
+		if (this.root == Node.NULL_NODE) {
+			root = new Node(c);
+			return;
+		}
+		// a stack is used to keep track nodes traversed
+		Stack<Node> s = new Stack<Node>();
+		this.root.add(c, s);
+		this.doRotation(s);
+	}
+
+	public void doRotation(Stack<Node> s) {
+		Node parentNode = Node.NULL_NODE;
+
+		Node unbalanceNode = findUnbalancedNode(s);
+		if (!s.isEmpty()) {
+			// parent note of the unbalanced node
+			parentNode = s.pop();
+		}
+
+		this.finishRotation(parentNode, unbalanceNode, s);
+
+	}
+
+	/*
+	 * This is a function find and return unbalanced node.
+	 */
+	public Node findUnbalancedNode(Stack<Node> s) {
+		Node child = s.pop();
+		if (s.isEmpty()) {
+			return Node.NULL_NODE;
+		}
+		Node parent = s.peek();
+		if (parent.right == child) {
+			parent.balance++;
+		} else {
+			parent.balance--;
+		}
+		if (parent.balance == 1) {
+			return Node.NULL_NODE;
+		} else if (parent.balance < 0 || parent.balance > 2) {
+			s.pop();
+			return parent;
+		}
+		return findUnbalancedNode(s);
+	}
+
+	/*
+	 * single left rotation at "UpperNode"
+	 */
+	public void singleLeftRotation(Node parentNode, Node upperNode, Node downNode) {
+		if (parentNode != Node.NULL_NODE) {
+			if (parentNode.left == upperNode) {
+				parentNode.left = downNode;
+			} else {
+				parentNode.right = downNode;
+			}
+		} else {
+			this.root = downNode;
+		}
+		// update rank and balance
+		downNode.rank = upperNode.rank + 1 + downNode.rank;
+		upperNode.right = downNode.left;
+		downNode.left = upperNode;
+
+		upperNode.balance = Node.Code.SAME.ordinal();
+		downNode.balance = Node.Code.SAME.ordinal();
+
+		totalRotationCount++;
+	}
+
+	/*
+	 * single right rotation at "UpperNode"
+	 */
+	public void singleRightRotation(Node parentNode, Node upperNode, Node downNode) {
+		if (parentNode != Node.NULL_NODE) {
+			if (parentNode.left == upperNode) {
+				parentNode.left = downNode;
+			} else {
+				parentNode.right = downNode;
+			}
+		} else {
+			this.root = downNode;
+		}
+		// update rank and balance
+		upperNode.rank = upperNode.rank - 1 - downNode.rank;
+		upperNode.left = downNode.right;
+		downNode.right = upperNode;
+
+		upperNode.balance = Node.Code.SAME.ordinal();
+		downNode.balance = Node.Code.SAME.ordinal();
+
+		totalRotationCount++;
+	}
+
+	/*
+	 * double left rotation at "UpperNode"
+	 */
+	public void doubleLeftRotation(Node parentNode, Node upperNode, Node downNode, Node lastNode) {
+		int situation = lastNode.balance;
+		// single right on the "downNode" first
+		this.singleRightRotation(upperNode, downNode, lastNode);
+		// then single left on the "upperNode"
+		this.singleLeftRotation(parentNode, upperNode, lastNode);
+		if (situation == 0) {
+			downNode.balance = Node.Code.RIGHT.ordinal();
+		} else if (situation == 2) {
+			upperNode.balance = Node.Code.LEFT.ordinal();
+		}
+	}
+
+	/*
+	 * double right rotation at "UpperNode"
+	 */
+	public void doubleRightRotation(Node parentNode, Node upperNode, Node downNode, Node lastNode) {
+		int situation = lastNode.balance;
+		// single left on the "downNode" first
+		this.singleLeftRotation(upperNode, downNode, lastNode);
+		// then single right on the "upperNode"
+		this.singleRightRotation(parentNode, upperNode, lastNode);
+		if (situation == 0) {
+			upperNode.balance = Node.Code.RIGHT.ordinal();
+		} else if (situation == 2) {
+			downNode.balance = Node.Code.LEFT.ordinal();
+		}
+	}
+
+	/**
+	 * Do the rotation and if the heights are the same after the rotation as
+	 * before the insertion, return true.
+	 * 
+	 * @param parentNode
+	 * @param parent
+	 * @param s
+	 * @return
+	 */
+	public boolean finishRotation(Node parentNode, Node parent, Stack<Node> s) {
+		boolean noHeightChange = false;
+		int bal = 0;
+		if (parent.balance < 0) {
+			if (parent.left.balance == 1) {
+				//Height won't be changed.
+				noHeightChange = true;
+				bal = 1;
+			}
+			if (parent.left.balance <= 1) {
+				//Do Single Right Rotation.
+				s.push(parent.left);
+				this.singleRightRotation(parentNode, parent, parent.left);
+				parent.balance -= bal;
+				s.peek().balance += bal;
+			} else {
+				//Do Double Right Rotation.
+				s.push(parent.left.right);
+				this.doubleRightRotation(parentNode, parent, parent.left, parent.left.right);
+			}
+		} else if (parent.balance > 2) {
+			if (parent.right.balance == 1) {
+				//Height won't be changed.
+				noHeightChange = true;
+				bal = -1;
+			}
+			if (parent.right.balance >= 1) {
+				//Do Single Left Rotation.
+				s.push(parent.right);
+				this.singleLeftRotation(parentNode, parent, parent.right);
+				parent.balance -= bal;
+				s.peek().balance += bal;
+			} else {
+				//Do Double Right Rotation.
+				s.push(parent.right.left);
+				this.doubleLeftRotation(parentNode, parent, parent.right, parent.right.left);
+			}
+		}
+
+		return noHeightChange;
+	}
+
+	/**
+	 * 
+	 * @param c
+	 *            character to add
+	 * @param pos
+	 *            character added in this inorder position
+	 * @throws IndexOutOfBoundsException
+	 *             id pos is negative or too large for this tree
+	 */
+	public void add(char c, int pos) throws IndexOutOfBoundsException {
+		if (pos < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		Stack<Node> s = new Stack<Node>();
+		// for the situation that the tree is empty
+		if (this.root == Node.NULL_NODE) {
+			if (pos >= 1) {
+				throw new IndexOutOfBoundsException();
+			}
+			this.root = new Node(c);
+			s.push(root);
+			return;
+		} else {
+			// for the situation the tree is not empty
+			s.push(this.root);
+			this.root.add(c, pos, s);
+		}
+		// execute rotation if necessary
+		this.doRotation(s);
+	}
+
+	/**
+	 * @return the number of nodes in this tree
+	 */
+	public int size() {
+		return this.root.size(); // replace by a real calculation.
+	}
+
+	/**
+	 * Delete the Node with two children and return an integer which represents
+	 * whether the last node is the left or right node of the previous node.
+	 * 
+	 * @param childNode
+	 * @param s
+	 * @return
+	 */
+	public int deleteDoubleChildrenNode(Node childNode, Stack<Node> s) {
+		// prev is the node need to be replaced.
+		Node current = childNode.right;
+		Node prev = childNode;
+		s.push(childNode);
+		// find the leftest node of the right child;
+		while (current.left != Node.NULL_NODE) {
+			s.push(current);
+			current.rank--;
+			prev = current;
+			current = current.left;
+		}
+		childNode.element = current.element;
+		if (prev != childNode) {
+			prev.left = current.right;
+			return -1;
+		} else {
+			prev.right = current.right;
+			return 1;
+		}
+	}
+
+	/**
+	 * 
+	 * @param pos
+	 *            position of character to delete from this tree
+	 * @return the character that is deleted
+	 * @throws IndexOutOfBoundsException
+	 */
+	public char delete(int pos) throws IndexOutOfBoundsException {
+		// Implementation requirement:
+		// When deleting a node with two children, you normally replace the
+		// node to be deleted with either its in-order successor or predecessor.
+		// The tests assume assume that you will replace it with the
+		// *successor*.
+		
+		
+		if (pos < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		// a stack is used to keep track of all the nodes traversed
+		Stack<Node> s = new Stack<Node>();
+		// the return element
+		char c = this.root.getNode(pos, s).element;
+		Node childNode = s.pop();
+		int leftOrRight = 0;
+		if (!s.isEmpty()) {
+			// parentNode is the parent of the unbalanced node.
+			Node parentNode = s.peek();
+			if (parentNode.left == childNode) {
+				if (childNode.left == Node.NULL_NODE) {
+					leftOrRight = -1;
+					parentNode.left = childNode.right;
+				} else if (childNode.right == Node.NULL_NODE) {
+					leftOrRight = -1;
+					parentNode.left = childNode.left;
+				} else {
+					leftOrRight = this.deleteDoubleChildrenNode(childNode, s);
+				}
+			}
+			// Remove the right element of previous node if this node is the
+			// right child of the previous node.
+			else {
+
+				if (childNode.left == Node.NULL_NODE) {
+					leftOrRight = 1;
+					parentNode.right = childNode.right;
+				} else if (childNode.right == Node.NULL_NODE) {
+					leftOrRight = 1;
+					parentNode.right = childNode.left;
+				} else {
+					leftOrRight = this.deleteDoubleChildrenNode(childNode, s);
+				}
+			}
+		} else {
+			// Delete Root
+			if (root.left == Node.NULL_NODE) {
+				root = root.right;
+				return c;
+			} else if (root.right == Node.NULL_NODE) {
+				root = root.left;
+				return c;
+			} else {
+				leftOrRight = this.deleteDoubleChildrenNode(root, s);
+			}
+
+		}
+
+		this.searchUnbalancedNode(s, leftOrRight);
+		return c; // replace by a real calculation.
+	}
+	
+	/*
+	 * check the nodes in the stack if they are unbalanced
+	 * (int) leftOrRight indicates left child or right child
+	 */
+	public void searchUnbalancedNode(Stack<Node> s, int leftOrRight) {
+		Node child = s.pop();
+		child.balance -= leftOrRight;
+		Node parentNode = Node.NULL_NODE;
+		if (!s.isEmpty()) {
+			parentNode = s.peek();
+		}
+		int size = s.size();
+		this.finishRotation(parentNode, child, s);
+		if (size == s.size()) {
+			s.push(child);
+		}
+		// after deletion, if a node's balance changed from
+		// 1 to 0 or 2, the subtree's height is unchanged
+		if (s.peek().balance == 0 || s.peek().balance == 2) {
+			return;
+		}
+		while (true) {
+			child = s.pop();
+			if (s.isEmpty()) {
+				break;
+			}
+			Node parent = s.peek();
+			if (parent.right == child) {
+				parent.balance--;
+			} else {
+				parent.balance++;
+			}
+			// after deletion, if a node's balance changed from
+			// 1 to 0 or 2, the subtree's height is unchanged
+			if (parent.balance == 0 || parent.balance == 2) {
+				return;
+			} else if (parent.balance < 0 || parent.balance > 2) {
+				s.pop();
+				parentNode = Node.NULL_NODE;
+				if (!s.isEmpty()) {
+					parentNode = s.peek();
+				}
+				// execute rotation;
+				// if rotation performed, break the loop;
+				boolean stop = this.finishRotation(parentNode, parent, s);
+				if (stop) {
+					break;
+				}
+
+			}
+		}
+	}
+
+	/**
+	 * This method operates in O(length*log N), where N is the size of this
+	 * tree.
+	 * 
+	 * @param pos
+	 *            location of the beginning of the string to retrieve
+	 * @param length
+	 *            length of the string to retrieve
+	 * @return string of length that starts in position pos
+	 * @throws IndexOutOfBoundsException
+	 *             unless both pos and pos+length-1 are legitimate indexes
+	 *             within this tree.
+	 */
+	public String get(int pos, int length) throws IndexOutOfBoundsException {
+		if (this.size() < pos+ length || this.size()<pos){
+			throw new IndexOutOfBoundsException();
+		}
+		StringBuilder sb = new StringBuilder();
+		for (int i= pos;i <length+pos;i++){
+			sb.append(this.get(i));
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * This method is provided for you, and should not need to be changed. If
+	 * split() and concatenate() are O(log N) operations as required, delete
+	 * should also be O(log N)
+	 * 
+	 * @param start
+	 *            position of beginning of string to delete
+	 * 
+	 * @param length
+	 *            length of string to delete
+	 * @return an EditTree containing the deleted string
+	 * @throws IndexOutOfBoundsException
+	 *             unless both start and start+length-1 are in range for this
+	 *             tree.
+	 */
+	public EditTree delete(int start, int length) throws IndexOutOfBoundsException {
+		if (start < 0 || start + length > this.size())
+			throw new IndexOutOfBoundsException(
+					(start < 0) ? "negative first argument to delete" : "delete range extends past end of string");
+		EditTree t2 = this.split(start);
+		EditTree t3 = t2.split(length);
+		this.concatenate(t3);
+		return t2;
+	}
+
+	/**
+	 * Append (in time proportional to the log of the size of the larger tree)
+	 * the contents of the other tree to this one. Other should be made empty
+	 * after this operation.
+	 * 
+	 * @param other
+	 * @throws IllegalArgumentException
+	 *             if this == other
+	 */
+	public void concatenate(EditTree other) throws IllegalArgumentException {
+
+	}
+
+	/**
+	 * This operation must be done in time proportional to the height of this
+	 * tree.
+	 * 
+	 * @param pos
+	 *            where to split this tree
+	 * @return a new tree containing all of the elements of this tree whose
+	 *         positions are >= position. Their nodes are removed from this
+	 *         tree.
+	 * @throws IndexOutOfBoundsException
+	 */
+	public EditTree split(int pos) throws IndexOutOfBoundsException {
+		return null; // replace by a real calculation.
+	}
+
+	/**
+	 * Don't worry if you can't do this one efficiently.
+	 * 
+	 * @param s
+	 *            the string to look for
+	 * @return the position in this tree of the first occurrence of s; -1 if s
+	 *         does not occur
+	 */
+	public int find(String s) {
+		
+		return -2;
+	}
+
+	/**
+	 * 
+	 * @param s
+	 *            the string to search for
+	 * @param pos
+	 *            the position in the tree to begin the search
+	 * @return the position in this tree of the first occurrence of s that does
+	 *         not occur before position pos; -1 if s does not occur
+	 */
+	public int find(String s, int pos) {
+		return -2;
+	}
+
+	/**
+	 * @return The root of this tree.
+	 */
+	public Node getRoot() {
+		return this.root;
+	}
+
+}
